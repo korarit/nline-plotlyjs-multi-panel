@@ -94,12 +94,10 @@ export const PlotlyChart = forwardRef<any, PlotlyChartProps>(
           })
         }
         onRelayout={(relayoutData: any) => {
-          if (relayoutData['xaxis.range[0]'] || relayoutData['yaxis.range[0]']) {
             onEvent?.({
               type: 'zoom',
               data: relayoutData,
             });
-          }
         }}
       />
     );
