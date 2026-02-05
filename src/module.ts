@@ -14,6 +14,17 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel)
   .setMigrationHandler(plotlyPanelMigrationHandler)
   .setPanelOptions((builder) => {
     return builder
+      .addNumberInput({
+        name: 'Grid Columns',
+        description: 'Number of columns in each row for multi-graph layout',
+        path: 'gridCols',
+        defaultValue: 1,
+        settings: {
+          min: 1,
+          max: 6,
+          step: 1,
+        },
+      })
       .addSelect({
         name: 'Image format',
         description: 'File type of exported image',
@@ -133,7 +144,8 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel)
         description: `
           Script executed whenever new data is available.
           Must return an object with one or more of the following properties:
-          data, layout, config, frames.`,
+          data, layout, config, frames.
+          For multi-graph mode, return an array of objects with graphId property.`,
         editor: PanelOptionCode,
         category: ['Script Editor'],
         settings: {

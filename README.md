@@ -9,6 +9,8 @@ Create advanced, interactive charts in Grafana using [Plotly.js](https://plotly.
 ## Key Features
 
 - Flexible chart creation with full Plotly.js capabilities
+- **Multi-graph mode** - Display multiple charts in a configurable grid layout
+- **Dynamic column configuration** - Set column count and custom widths via script
 - YAML/JSON support for easy configuration
 - Dark/light theme compatibility
 - Automatic and manual timezone adjustment
@@ -76,17 +78,22 @@ The `utils` object provides several utility functions and services to assist wit
 
 The script must return an object that defines the chart configuration. This object can include one or more of the following properties:
 
+**Single-graph mode:**
 - `data`: An array of trace objects defining the chart's data series
 - `layout`: An object controlling the chart's appearance and axes
 - `config`: An object setting chart-wide options
 - `frames`: An array of frame objects for animated charts
+
+**Multi-graph mode:**
+- `graphs`: An array of graph configurations for displaying multiple charts
+- `gridConfig`: Optional grid layout configuration with `cols` (number) and `widths` (array of percentages)
 
 **Note:** The `data` and `frames` properties should be arrays of objects. The "Cross-trace Data" field can be an object, which will apply the parameters to all returned traces in the _Script_ section. Objects are merged with script objects given priority (e.g., `data` from script > `allData` > `data`).
 
 The script is defined in the "Processing Script" editor.
 
 ```js
-// Example: Basic timeseries plot
+// Example 1: Single graph - Basic timeseries plot
 const { data, variables, options, utils } = arguments;
 let series = data.series[0];
 let x = series.fields[0];
@@ -107,7 +114,53 @@ return {
     yaxis: { title: y.name },
   },
 };
+
+// Example 2: Multi-graph - 2 equal columns
+const graphs = [];
+data.series.forEach((series, index) => {
+  graphs.push({
+    id: `graph-${index}`,
+    title: series.name,
+    data: [{
+      x: series.fields[0].values,
+      y: series.fields[1].values,
+      type: 'scatter',
+      mode: 'lines',
+      name: series.fields[1].name
+    }],
+    layout: {},
+    config: {},
+    frames: []
+  });
+});
+
+return { 
+  graphs,
+  gridConfig: { cols: 2 }  // 2 columns, equal width [50%, 50%]
+};
+
+// Example 3: Multi-graph - 3 columns with custom widths
+return { 
+  graphs,
+  gridConfig: { 
+    cols: 3,
+    widths: [70, 15, 15]  // Main: 70%, others: 15% each
+  }
+};
+
+// Example 4: Multi-graph - Auto-distribute remaining columns
+return { 
+  graphs,
+  gridConfig: { 
+    cols: 3,
+    widths: [70]  // First: 70%, others auto: [70%, 15%, 15%]
+  }
+};
 ```
+
+### Multi-Graph Configuration
+
+For detailed multi-graph and column configuration options, see [MULTI_GRAPH_COLUMN_CONFIG.md](./MULTI_GRAPH_COLUMN_CONFIG.md).
 
 ### On-click Event Handling
 

@@ -13,6 +13,45 @@ export interface SimpleOptions {
   frames: any[];
   script: string;
   onclick: string;
+  gridCols: number;
+  graphs: GraphConfig[];
+}
+
+/**
+ * Multi-graph configuration for displaying multiple Plotly charts in a grid.
+ * When the 'graphs' array has items, the panel will render in multi-graph mode.
+ * Each graph can have its own data, layout, config, and processing script.
+ * 
+ * To use multi-graph mode:
+ * 1. Return { graphs: [...], gridConfig: { cols: 3, widths: [70, 15, 15] } }
+ * 2. gridConfig is optional - if not provided, will auto-distribute equally
+ * 3. widths are percentages and should sum to 100 for optimal layout
+ * 4. Each graph can have its own script for custom processing
+ * 5. The Panel Processing Script will be applied first to all data
+ * 6. Each graph's individual script will then process its specific data
+ */
+export interface GraphConfig {
+  id: string;
+  title: string;
+  data: any[];
+  layout: object;
+  config: object;
+  frames: any[];
+  script: string;
+  onclick: string;
+}
+
+/**
+ * Grid layout configuration for multi-graph mode
+ * cols: number of columns per row (1-6)
+ * widths: array of column widths in percentage (e.g., [50, 30, 20])
+ *         - Optional: if not provided, columns will be distributed equally
+ *         - Can specify widths for some columns only (others will auto-distribute)
+ *         - Example: [70] with 3 cols → [70%, 15%, 15%]
+ */
+export interface GridConfig {
+  cols: number;
+  widths?: number[];
 }
 
 export interface SimpleBase {
@@ -74,11 +113,12 @@ export const inits: SimpleOptions = {
   layout: defaultLayout,
   config: {},
   frames: [],
+  gridCols: 1,
+  graphs: [],
   script: `\
-// Basic timeseries plot
+// Single Graph Mode Example:
+// Create a basic timeseries plot
 /*
-// 'data', 'variables', 'options', and 'utils' are passed as arguments
-
 let series = data.series[0];
 let x = series.fields[0];
 let y = series.fields[1];
@@ -89,48 +129,96 @@ return {
     y: y.values || y.values.buffer,
     type: 'scatter',
     mode: 'lines',
-    name: x.name
+    name: y.name
   }],
   layout: {
     xaxis: { title: x.name },
     yaxis: { title: y.name }
   }
 }
+
+// Multi-Graph Mode Example 1 - Equal Columns:
+// Auto-distribute columns equally
+const graphs = [];
+data.series.forEach((series, index) => {
+  const xField = series.fields[0];
+  const yField = series.fields[1];
+  if (yField) {
+    graphs.push({
+      id: \`graph-\${index}\`,
+      title: yField.name,
+      data: [{
+        x: xField.values || xField.values.buffer,
+        y: yField.values || yField.values.buffer,
+        type: 'scatter',
+        mode: 'lines',
+        name: yField.name
+      }],
+      layout: {
+        xaxis: { title: xField.name },
+        yaxis: { title: yField.name }
+      },
+      config: {},
+      frames: []
+    });
+  }
+});
+
+return { 
+  graphs,
+  gridConfig: { cols: 2 }  // Auto-distribute: [50%, 50%]
+};
+
+// Multi-Graph Mode Example 2 - Custom Column Widths:
+// Specify widths for some/all columns
+const graphs = [];
+data.series.forEach((series, index) => {
+  // ... create graphs
+});
+
+return { 
+  graphs,
+  gridConfig: { 
+    cols: 3,
+    widths: [70]  // First column 70%, others auto: [70%, 15%, 15%]
+  }
+};
+
+// Multi-Graph Mode Example 3 - Custom Widths for All:
+return { 
+  graphs,
+  gridConfig: { 
+    cols: 3,
+    widths: [50, 30, 20]  // Exact: [50%, 30%, 20%]
+  }
+};
 */
+
 return {}
   `,
   onclick: `\
 // Event handling
 /*
-// 'data', 'variables', 'options', 'utils', and 'event' are passed as arguments
+const { type: eventType, data: eventData } = event;
+const { timeZone, dayjs, locationService, getTemplateSrv } = utils;
 
-try {
-  const { type: eventType, data: eventData } = event;
-  const { timeZone, dayjs, locationService, getTemplateSrv } = utils;
+// Multi-graph mode includes graphId in eventData
+if (eventData.graphId) {
+  console.log('Event from graph:', eventData.graphId);
+}
 
-  switch (eventType) {
-    case 'click':
-      console.log('Click event:', eventData.points);
-      break;
-    case 'select':
-      console.log('Selection event:', eventData.range);
-      break;
-    case 'zoom':
-      console.log('Zoom event:', eventData);
-      break;
-    default:
-      console.log('Unhandled event type:', eventType, eventData);
-  }
-
-  console.log('Current time zone:', timeZone);
-  console.log('From time:', dayjs(variables.__from).format());
-  console.log('To time:', dayjs(variables.__to).format());
-
-  // Example of using locationService
-  // locationService.partial({ 'var-example': 'test' }, true);
-
-} catch (error) {
-  console.error('Error in onclick handler:', error);
+switch (eventType) {
+  case 'click':
+    console.log('Click event:', eventData.points);
+    break;
+  case 'select':
+    console.log('Selection event:', eventData.range);
+    break;
+  case 'zoom':
+    console.log('Zoom event:', eventData);
+    break;
+  default:
+    console.log('Unhandled event type:', eventType, eventData);
 }
 */
   `,

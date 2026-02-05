@@ -73,33 +73,47 @@ export const PlotlyChart = forwardRef<any, PlotlyChartProps>(
     );
 
     return (
-      <Plot
-        ref={ref}
-        data={data}
-        layout={{ ...layout, width, height }}
-        config={updatedConfig}
-        frames={frames}
-        useResizeHandler={true}
-        style={{ width: `${width}px`, height: `${height}px` }}
-        onClick={(clickData: any) =>
-          onEvent?.({
-            type: 'click',
-            data: clickData,
-          })
-        }
-        onSelected={(selectData: any) =>
-          onEvent?.({
-            type: 'select',
-            data: selectData,
-          })
-        }
-        onRelayout={(relayoutData: any) => {
-            onEvent?.({
-              type: 'zoom',
-              data: relayoutData,
-            });
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          position: 'relative',
+          backgroundColor: 'transparent'
         }}
-      />
+      >
+        <Plot
+          ref={ref}
+          data={data}
+          layout={layout}
+          config={updatedConfig}
+          frames={frames}
+          useResizeHandler={true}
+          style={{ 
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'transparent'
+          }}
+          onClick={(clickData: any) =>
+            onEvent?.({
+              type: 'click',
+              data: clickData,
+            })
+          }
+          onSelected={(selectData: any) =>
+            onEvent?.({
+              type: 'select',
+              data: selectData,
+            })
+          }
+          onRelayout={(relayoutData: any) => {
+              onEvent?.({
+                type: 'zoom',
+                data: relayoutData,
+              });
+          }}
+        />
+      </div>
     );
   }
 );

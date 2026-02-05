@@ -82,3 +82,69 @@ export const emptyData = (data: any): { isEmpty: boolean; message: string } => {
 
   return { isEmpty: true, message: 'All traces are empty' };
 };
+
+export const formatGraphValues = (graph: any, transformFn: (value: string) => string): any => {
+  if (!graph) {
+    return graph;
+  }
+
+  const formatted = { ...graph };
+  
+  if (graph.title) {
+    formatted.title = transformFn(graph.title);
+  }
+  if (graph.data) {
+    formatted.data = fmtValues(graph.data, transformFn);
+  }
+  if (graph.layout) {
+    formatted.layout = fmtValues(graph.layout, transformFn);
+  }
+  if (graph.config) {
+    formatted.config = fmtValues(graph.config, transformFn);
+  }
+  if (graph.frames) {
+    formatted.frames = fmtValues(graph.frames, transformFn);
+  }
+
+  return formatted;
+};
+
+/**
+ * Calculate column widths for grid layout
+ * Supports partial width specification with auto-distribution
+ * 
+ * Example 1: cols=3, widths=[70] → [70, 15, 15]
+ * Example 2: cols=3, widths=[50, 30, 20] → [50, 30, 20]
+ * Example 3: cols=3, widths=undefined → [33.33, 33.33, 33.33]
+ */
+export const calculateColumnWidths = (cols: number, widths?: number[]): number[] => {
+  const result: number[] = [];
+  
+  // If no widths specified, distribute equally
+  if (!widths || widths.length === 0) {
+    const equalWidth = 100 / cols;
+    return Array(cols).fill(equalWidth);
+  }
+
+  // If widths array matches cols length, use as-is
+  if (widths.length === cols) {
+    return widths;
+  }
+
+  // Partial specification: fill specified widths, auto-distribute the rest
+  const specifiedSum = widths.reduce((sum, w) => sum + w, 0);
+  const remainingWidth = 100 - specifiedSum;
+  const remainingCols = cols - widths.length;
+  const autoWidth = remainingCols > 0 ? remainingWidth / remainingCols : 0;
+
+  for (let i = 0; i < cols; i++) {
+    if (i < widths.length) {
+      result.push(widths[i]);
+    } else {
+      result.push(autoWidth);
+    }
+  }
+
+  return result;
+};
+

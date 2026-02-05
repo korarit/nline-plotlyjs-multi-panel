@@ -6,6 +6,7 @@ import { processData, emptyData } from './dataUtils';
 import { useScriptEvaluation } from './useScriptEvaluation';
 import { useChartConfig } from './useChartConfig';
 import { PlotlyChart } from './PlotlyChart';
+import { MultiGraphPanel } from './MultiGraphPanel';
 import { ErrorDisplay } from './ErrorDisplay';
 import { useTheme2 } from '@grafana/ui';
 
@@ -81,15 +82,112 @@ export const SimplePanel: React.FC<Props> = ({
       return null;
     }
     try {
-      return evaluateScript(options.script, scriptVars);
+      const result = evaluateScript(options.script, scriptVars);
+      // DEBUG: Log evaluated script result
+      console.log('📋 evaluatedScript result:', result);
+      return result;
     } catch (e: any) {
       // Don't set the error state here, let the scriptError from useScriptEvaluation handle it
+      console.error('❌ evaluateScript error:', e);
       return null;
     }
   }, [options.script, scriptVars, evaluateScript]);
 
   const theme = useTheme2();
-  const chartConfig = useChartConfig(options, evaluatedScript, replaceVariables, width, height, theme, data);
+  
+  // Check if using multi-graph mode from evaluatedScript
+  const isMultiGraphMode = evaluatedScript?.graphs && evaluatedScript.graphs.length > 0;
+  
+  // Extract grid config from evaluatedScript
+  const gridConfig = evaluatedScript?.gridConfig;
+  const gridCols = gridConfig?.cols || options.gridCols || 1;
+  const columnWidths = gridConfig?.widths;
+  
+  // DEBUG: Log multi-graph detection
+  if (evaluatedScript) {
+    console.log('🔍 SimplePanel Debug:', {
+      evaluatedScript,
+      hasGraphs: !!evaluatedScript?.graphs,
+      graphsLength: evaluatedScript?.graphs?.length,
+      isMultiGraphMode,
+      gridConfig,
+    });
+  }
+  
+  // For multi-graph mode, process each graph
+  const multiGraphCharts = useMemo(() => {
+    if (!isMultiGraphMode || !scriptVars || !evaluatedScript?.graphs) {
+      return null;
+    }
+    
+    const cols = Math.max(1, Math.min(gridCols, evaluatedScript.graphs.length));
+    const rows = Math.ceil(evaluatedScript.graphs.length / cols);
+    const chartWidth = width / cols;
+    const chartHeight = height / rows;
+
+    const processedCharts = evaluatedScript.graphs.map((graph: any) => {
+      // Evaluate script specific to this graph if it has one
+      let graphLayout = graph.layout || {};
+      let graphData = graph.data || [];
+      let graphConfig = graph.config || {};
+      let graphFrames = graph.frames || [];
+
+      if (graph.script) {
+        try {
+          const result = evaluateScript(graph.script, scriptVars);
+          if (result) {
+            graphData = result.data || graphData;
+            graphLayout = result.layout || graphLayout;
+            graphConfig = result.config || graphConfig;
+            graphFrames = result.frames || graphFrames;
+          }
+        } catch (e: any) {
+          console.error(`Error evaluating script for graph ${graph.id}:`, e);
+        }
+      }
+
+      return {
+        id: graph.id,
+        title: graph.title,
+        data: graphData,
+        layout: graphLayout,
+        config: graphConfig,
+        frames: graphFrames,
+        width: chartWidth,
+        height: chartHeight,
+      };
+    });
+
+    // DEBUG: Log processed charts
+    console.log('📊 MultiGraphCharts processed:', {
+      count: processedCharts.length,
+      cols,
+      rows,
+      columnWidths,
+      charts: processedCharts.map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        dataLength: c.data?.length,
+        hasLayout: !!c.layout,
+      })),
+    });
+
+    return processedCharts;
+  }, [isMultiGraphMode, evaluatedScript, gridCols, width, height, scriptVars, evaluateScript, columnWidths]);
+
+  // For single graph mode, use the existing logic
+  // Only pass evaluatedScript to useChartConfig if NOT in multi-graph mode
+  const chartConfig = !isMultiGraphMode
+    ? useChartConfig(
+        options,
+        isMultiGraphMode ? null : evaluatedScript,
+        replaceVariables,
+        width,
+        height,
+        theme,
+        data
+      )
+    : null;
 
   useEffect(() => {
     // Clear errors when options or data change, but not scriptError
@@ -97,7 +195,7 @@ export const SimplePanel: React.FC<Props> = ({
   }, [options, data]);
 
   const handleEvent = useCallback(
-    (event: { type: 'click' | 'select' | 'zoom'; data: any }) => {
+    (event: { type: 'click' | 'select' | 'zoom'; data: any; graphId?: string }) => {
       if (options.onclick && scriptVars) {
         const eventContext = {
           ...scriptVars,
@@ -144,9 +242,39 @@ export const SimplePanel: React.FC<Props> = ({
     return <ErrorDisplay message={error.message} title="Error" />;
   }
 
+  // Multi-graph mode rendering
+  if (isMultiGraphMode) {
+    console.log('🎨 Rendering MultiGraphPanel with:', {
+      multiGraphChartsLength: multiGraphCharts?.length,
+      gridCols,
+      columnWidths,
+    });
+    
+    if (!multiGraphCharts || multiGraphCharts.length === 0) {
+      return <ErrorDisplay message="No graphs configured" title="Error" />;
+    }
+
+    return (
+      <MultiGraphPanel
+        charts={multiGraphCharts}
+        gridCols={gridCols}
+        columnWidths={columnWidths}
+        totalWidth={width}
+        totalHeight={height}
+        onEvent={handleEvent}
+        replaceVariables={replaceVariables}
+      />
+    );
+  }
+
+  // Single graph mode rendering (original behavior)
+  if (!chartConfig) {
+    return <ErrorDisplay message="No chart configuration available" title="Data Error" isNoData={true} />;
+  }
+
   const { isEmpty, message } = emptyData(chartConfig.data);
 
-  if (!chartConfig || isEmpty) {
+  if (isEmpty) {
     return <ErrorDisplay message={message} title="Data Error" isNoData={true} />;
   }
 

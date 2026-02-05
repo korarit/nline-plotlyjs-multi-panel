@@ -1,0 +1,81 @@
+# Multi-Graph Configuration Example
+# Use this as a reference for configuring multiple graphs in the Plotly panel
+
+# Grid Layout Configuration
+gridCols: 2  # Number of columns (1-6)
+
+# Example: Single Graph Mode (Default)
+# Simply define data, layout, and config as before
+# Leave graphs array empty
+
+# Example for Processing Script - Single Graph Mode:
+# let series = data.series[0];
+# let x = series.fields[0];
+# let y = series.fields[1];
+# 
+# return {
+#   data: [{
+#     x: x.values || x.values.buffer,
+#     y: y.values || y.values.buffer,
+#     type: 'scatter',
+#     mode: 'lines',
+#     name: y.name
+#   }],
+#   layout: {
+#     xaxis: { title: x.name },
+#     yaxis: { title: y.name }
+#   }
+# }
+
+# Example for Processing Script - Multi-Graph Mode:
+# const graphs = [];
+# data.series.forEach((series, index) => {
+#   const xField = series.fields[0];
+#   const yField = series.fields[1];
+#   
+#   if (yField) {
+#     graphs.push({
+#       id: `graph-${index}`,
+#       title: yField.name,
+#       data: [{
+#         x: xField.values || xField.values.buffer,
+#         y: yField.values || yField.values.buffer,
+#         type: 'scatter',
+#         mode: 'lines',
+#         name: yField.name
+#       }],
+#       layout: {
+#         xaxis: { title: xField.name },
+#         yaxis: { title: yField.name },
+#         title: { text: yField.name }
+#       },
+#       config: {},
+#       frames: []
+#     });
+#   }
+# });
+# 
+# return { graphs };
+
+# Cross-trace Data
+# Applied to all traces across all graphs
+allData: {}
+
+# Data (single graph mode)
+data: []
+
+# Layout (single graph mode)
+layout:
+  font:
+    family: 'Inter, Helvetica, Arial, sans-serif'
+  xaxis:
+    type: 'date'
+    autorange: true
+  yaxis:
+    autorange: true
+
+# Configuration
+config: {}
+
+# Frames for animation
+frames: []

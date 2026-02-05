@@ -9,9 +9,43 @@ export const useScriptEvaluation = () => {
       const result = f(...Object.values(context));
 
       // Validate the result
-      if (result && typeof result === 'object' && 'data' in result) {
-        if (!Array.isArray(result.data)) {
-          throw new Error("The 'data' property must be an array");
+      if (result && typeof result === 'object') {
+        // Check for single-graph mode (data property)
+        if ('data' in result) {
+          if (!Array.isArray(result.data)) {
+            throw new Error("The 'data' property must be an array");
+          }
+        }
+        // Check for multi-graph mode (graphs property)
+        if ('graphs' in result) {
+          if (!Array.isArray(result.graphs)) {
+            throw new Error("The 'graphs' property must be an array");
+          }
+          // Validate each graph
+          result.graphs.forEach((graph: any, idx: number) => {
+            if (!graph.id) throw new Error(`Graph ${idx} is missing 'id' property`);
+            if (!graph.title) throw new Error(`Graph ${idx} is missing 'title' property`);
+            if (!Array.isArray(graph.data)) throw new Error(`Graph ${idx} 'data' must be an array`);
+          });
+        }
+        // Check for gridConfig (optional)
+        if ('gridConfig' in result) {
+          const gridConfig = result.gridConfig;
+          if (gridConfig && typeof gridConfig === 'object') {
+            if (!gridConfig.cols || typeof gridConfig.cols !== 'number' || gridConfig.cols < 1 || gridConfig.cols > 6) {
+              throw new Error("gridConfig.cols must be a number between 1 and 6");
+            }
+            if (gridConfig.widths) {
+              if (!Array.isArray(gridConfig.widths)) {
+                throw new Error("gridConfig.widths must be an array of numbers");
+              }
+              gridConfig.widths.forEach((width: any, idx: number) => {
+                if (typeof width !== 'number' || width <= 0) {
+                  throw new Error(`gridConfig.widths[${idx}] must be a positive number`);
+                }
+              });
+            }
+          }
         }
       }
 
