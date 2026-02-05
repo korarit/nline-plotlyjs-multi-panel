@@ -1,10 +1,18 @@
-# Plotly Panel for Grafana
+# Multi-Graph Plotly Panel for Grafana
 
 ![Marketplace](https://img.shields.io/badge/dynamic/json?logo=grafana&color=F47A20&label=marketplace&url=https%3A%2F%2Fgrafana.com%2Fapi%2Fplugins%2Fnline-plotlyjs-panel&query=%24.version)
 ![Downloads](https://img.shields.io/badge/dynamic/json?logo=grafana&color=F47A20&label=downloads&url=https%3A%2F%2Fgrafana.com%2Fapi%2Fplugins%2Fnline-plotlyjs-panel&query=%24.downloads)
 
-
 Create advanced, interactive charts in Grafana using [Plotly.js](https://plotly.com/javascript/).
+
+> [!NOTE]
+> This project is extended from [nline/nline-plotlyjs-panel](https://github.com/nline/nline-plotlyjs-panel) to support **rendering multiple graphs in a single panel**.
+
+## 📚 Guides & Documentation
+
+- [**Multi-Graph Guide**](./MULTI_GRAPH_GUIDE.md) - Learn how to display multiple charts.
+- [**Column Configuration**](./MULTI_GRAPH_COLUMN_CONFIG.md) - Configure grid layouts and column widths.
+- [**Quick Start**](./MULTI_GRAPH_QUICK_START.md) - Get started quickly.
 
 ## Key Features
 
@@ -79,12 +87,14 @@ The `utils` object provides several utility functions and services to assist wit
 The script must return an object that defines the chart configuration. This object can include one or more of the following properties:
 
 **Single-graph mode:**
+
 - `data`: An array of trace objects defining the chart's data series
 - `layout`: An object controlling the chart's appearance and axes
 - `config`: An object setting chart-wide options
 - `frames`: An array of frame objects for animated charts
 
 **Multi-graph mode:**
+
 - `graphs`: An array of graph configurations for displaying multiple charts
 - `gridConfig`: Optional grid layout configuration with `cols` (number) and `widths` (array of percentages)
 
@@ -121,40 +131,42 @@ data.series.forEach((series, index) => {
   graphs.push({
     id: `graph-${index}`,
     title: series.name,
-    data: [{
-      x: series.fields[0].values,
-      y: series.fields[1].values,
-      type: 'scatter',
-      mode: 'lines',
-      name: series.fields[1].name
-    }],
+    data: [
+      {
+        x: series.fields[0].values,
+        y: series.fields[1].values,
+        type: 'scatter',
+        mode: 'lines',
+        name: series.fields[1].name,
+      },
+    ],
     layout: {},
     config: {},
-    frames: []
+    frames: [],
   });
 });
 
-return { 
+return {
   graphs,
-  gridConfig: { cols: 2 }  // 2 columns, equal width [50%, 50%]
+  gridConfig: { cols: 2 }, // 2 columns, equal width [50%, 50%]
 };
 
 // Example 3: Multi-graph - 3 columns with custom widths
-return { 
+return {
   graphs,
-  gridConfig: { 
+  gridConfig: {
     cols: 3,
-    widths: [70, 15, 15]  // Main: 70%, others: 15% each
-  }
+    widths: [70, 15, 15], // Main: 70%, others: 15% each
+  },
 };
 
 // Example 4: Multi-graph - Auto-distribute remaining columns
-return { 
+return {
   graphs,
-  gridConfig: { 
+  gridConfig: {
     cols: 3,
-    widths: [70]  // First: 70%, others auto: [70%, 15%, 15%]
-  }
+    widths: [70], // First: 70%, others auto: [70%, 15%, 15%]
+  },
 };
 ```
 
