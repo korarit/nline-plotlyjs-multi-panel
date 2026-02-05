@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-02-05
+
+### Added
+
+- **Dynamic Column Configuration**: Added support for configuring grid columns and widths directly in the processing script via `gridConfig`.
+- **Multi-Graph CSS**: Added `MULTI_GRAPH_COLUMN_CONFIG.md` guide and updated `MultiGraphPanel` to support custom column widths.
+
+### Fixed
+
+- **Multi-Graph "No Data" Issue**: Fixed an issue where the panel would show "No data" even when graphs were correctly configured in multi-graph mode. This was caused by `useChartConfig` receiving an incorrect data structure.
+- **Background Color**: Fixed transparent background rendering for Plotly charts in multi-graph mode.
+
 ## [1.8.1] - 2024-09-30
 
 ### Changed
@@ -30,6 +42,7 @@ All notable changes to this project will be documented in this file.
 ### Note
 
 The contextual variables have been changed:
+
 - `parameters` (referencing the data, allData, layout, config) has been changed to `options`
 - Helper functions are bundled in a `utils` object where you can reference `timeZone`, `dayjs`, `matchTimezone`, `locationService`, `getTemplateSrv` from the `utils` object like `utils.timeZone` or `utils.locationService`.
 
